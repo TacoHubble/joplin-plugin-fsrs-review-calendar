@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>FSRS Review Calendar</title>
+</head>
+<body>
+	<div class="app-shell">
+		<header class="panel-header">
+			<div>
+				<h1>Review calendar</h1>
+				<p id="scope-label">Loading review notes…</p>
+			</div>
+			<div class="header-actions">
+				<button id="today-button" class="primary-button" type="button">Today</button>
+				<button id="insights-button" class="secondary-button" type="button">Insights</button>
+				<button id="data-tools-button" class="secondary-button" type="button">Data tools</button>
+				<button id="import-button" class="secondary-button" type="button">Import .ics</button>
+				<button id="export-button" class="secondary-button" type="button">Copy .ics</button>
+				<button id="refresh-button" class="secondary-button" type="button" aria-label="Refresh calendar">Refresh</button>
+			</div>
+		</header>
+		<section id="onboarding" class="onboarding" hidden>
+			<div><strong>Plan study topics, not flashcards.</strong><p>Add a topic, study it, then choose Again or Good to let FSRS schedule its next review.</p></div>
+			<div class="header-actions"><button id="sample-button" class="primary-button" type="button">Create sample topic</button><button id="dismiss-onboarding" class="secondary-button" type="button">Got it</button></div>
+		</section>
+		<section id="today-dashboard" class="today-dashboard" hidden>
+			<div class="section-heading"><div><p class="eyebrow">Daily plan</p><h2>Today</h2><p id="capacity-label" class="helper-text"></p></div><div class="header-actions"><button id="start-session" class="primary-button" type="button">Start review session</button><button id="close-today" class="icon-button" type="button">×</button></div></div>
+			<div class="today-grid"><div><h3>Reviews due</h3><div id="today-reviews" class="agenda-items"></div></div><div><h3>Scheduled</h3><div id="today-events" class="agenda-items"></div></div><div><h3>Overdue</h3><div id="today-overdue" class="agenda-items"></div></div><div><h3>Unscheduled</h3><div id="today-unscheduled" class="agenda-items"></div></div></div>
+		</section>
+		<section id="insights-panel" class="insights-panel" hidden><div class="section-heading"><div><p class="eyebrow">Study insights</p><h2>Your review rhythm</h2></div><button id="close-insights" class="icon-button" type="button">×</button></div><div id="insight-cards" class="insight-cards"></div><h3>Consistency</h3><div id="heatmap" class="heatmap"></div><h3>Frequently marked Again</h3><div id="difficult-topics" class="agenda-items"></div></section>
+		<div class="command-bar">
+			<input id="quick-add" type="search" placeholder="Quick add: Lunch with Sarah tomorrow at 12:30pm" aria-label="Natural language quick add">
+			<input id="event-search" type="search" placeholder="Search events…" aria-label="Search calendar">
+			<select id="display-time-zone" aria-label="Display time zone">
+				<option value="local">Local time</option>
+				<option value="UTC">UTC</option>
+			</select>
+		</div>
+		<div id="calendar-layers" class="calendar-layers" aria-label="Calendar layers"></div>
+
+		<div id="status" class="status" role="status" aria-live="polite"></div>
+		<main id="calendar" aria-label="FSRS review calendar"></main>
+		<section id="agenda-footer" class="agenda-footer" aria-label="Additional agenda items" hidden>
+			<div id="agenda-undated" class="agenda-section" hidden><h2>Unscheduled to-dos</h2><div class="agenda-items"></div></div>
+			<div id="agenda-overdue" class="agenda-section overdue-section" hidden><h2>Overdue</h2><p>Incomplete items are kept here so upcoming work stays easy to scan.</p><div class="agenda-items"></div></div>
+		</section>
+
+		<section id="review-panel" class="review-panel" aria-labelledby="review-title" hidden>
+			<div class="review-summary">
+				<div>
+					<p class="eyebrow">Review note</p>
+					<h2 id="review-title"></h2>
+				</div>
+				<button id="close-review" class="icon-button" type="button" aria-label="Close review bar">×</button>
+			</div>
+			<p id="review-stats" class="review-stats"></p>
+			<p id="review-memo" class="review-memo"></p>
+			<div class="review-quick-actions"><button id="edit-button" class="secondary-button" type="button">Edit</button><button id="snooze-button" class="secondary-button" type="button">Snooze…</button><button id="skip-button" class="secondary-button" type="button">Skip today</button><button id="undo-button" class="secondary-button" type="button">Undo</button></div>
+			<label id="review-recurrence-control" class="recurrence-toggle">
+				<input id="recurring-toggle" type="checkbox">
+				<span>Repeat with FSRS after each review</span>
+			</label>
+			<p id="recurrence-hint" class="recurrence-hint"></p>
+			<div id="rating-buttons" class="rating-buttons" aria-label="Choose a review rating"></div>
+			<details id="history-details"><summary>Review history</summary><div id="review-history" class="history-list"></div></details>
+			<button id="complete-button" class="complete-button" type="button">✓ Mark complete</button>
+		</section>
+
+		<div id="memo-modal" class="modal-backdrop" hidden>
+			<form id="memo-form" class="memo-modal" aria-labelledby="memo-form-title">
+				<div class="review-summary">
+					<div>
+						<p class="eyebrow">New calendar item</p>
+						<h2 id="memo-form-title">Add a memo</h2>
+					</div>
+					<button id="cancel-memo-icon" class="icon-button" type="button" aria-label="Cancel">×</button>
+				</div>
+				<label class="field-label" for="memo-title">Title</label>
+				<input id="memo-title" name="title" type="text" maxlength="200" required autocomplete="off">
+				<p class="helper-text compact-helper">Saved as a Joplin to-do in the <strong>Calendar</strong> notebook. Checking it off removes it from this calendar.</p>
+				<label class="field-label" for="memo-body">Memo</label>
+				<textarea id="memo-body" name="memo" rows="4" maxlength="10000"></textarea>
+				<div class="date-fields">
+					<div>
+						<label class="field-label" for="memo-date">Date</label>
+						<input id="memo-date" name="date" type="date" required>
+					</div>
+					<div>
+						<label class="field-label" for="memo-time">Time</label>
+						<input id="memo-time" name="time" type="time" step="300">
+					</div>
+					<div>
+						<label class="field-label" for="memo-end-time">End time</label>
+						<input id="memo-end-time" name="end-time" type="time" step="300">
+					</div>
+				</div>
+				<label class="field-label" for="memo-planned-minutes">Planned study time (minutes)</label><input id="memo-planned-minutes" type="number" min="5" max="1440" step="5" value="60">
+				<div id="edit-scope-control" hidden><label class="field-label" for="edit-scope">Recurring event edit scope</label><select id="edit-scope"><option value="series">This and all occurrences</option><option value="occurrence">Only this occurrence</option></select></div>
+				<label class="recurrence-toggle"><input id="memo-all-day" type="checkbox"><span>All-day item</span></label>
+				<label class="recurrence-toggle"><input id="memo-recurring" type="checkbox" checked><span>Repeat with FSRS after reviews</span></label>
+				<div class="form-grid">
+					<div>
+						<label class="field-label" for="memo-rrule-preset">Fixed recurrence (RRULE)</label>
+						<select id="memo-rrule-preset">
+							<option value="">Does not repeat</option>
+							<option value="FREQ=DAILY">Daily</option>
+							<option value="FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR">Weekdays</option>
+							<option value="FREQ=WEEKLY">Weekly</option>
+							<option value="FREQ=MONTHLY;BYDAY=1MO">First Monday monthly</option>
+							<option value="custom">Custom RFC 5545 rule…</option>
+						</select>
+					</div>
+					<div>
+						<label class="field-label" for="memo-time-zone">Event time zone</label>
+						<input id="memo-time-zone" type="text" placeholder="floating or America/Chicago">
+					</div>
+				</div>
+				<input id="memo-rrule" type="text" placeholder="FREQ=MONTHLY;INTERVAL=2;COUNT=10" hidden>
+				<div class="form-grid">
+					<div><label class="field-label" for="memo-secondary-time-zone">Second time zone</label><input id="memo-secondary-time-zone" type="text" placeholder="Europe/London"></div>
+					<div><label class="field-label" for="memo-calendar-name">Calendar layer</label><input id="memo-calendar-name" type="text" value="Reviews" list="calendar-name-list"><datalist id="calendar-name-list"></datalist></div>
+					<div><label class="field-label" for="memo-color">Layer color</label><input id="memo-color" type="color" value="#3578d4"></div>
+					<div><label class="field-label" for="memo-visibility">Visibility / access</label><select id="memo-visibility"><option value="edit">Edit / delegate</option><option value="readonly">Read-only</option><option value="freebusy">Free-busy only</option><option value="public">Public</option></select></div>
+				</div>
+				<div class="form-grid">
+					<div><label class="field-label" for="memo-reminder-offset">Reminder offset</label><select id="memo-reminder-offset"><option value="">None</option><option value="10">10 minutes before</option><option value="60">1 hour before</option><option value="1440">1 day before</option></select></div>
+					<div><label class="field-label" for="memo-reminder-channel">Reminder channel</label><select id="memo-reminder-channel"><option value="desktop">Joplin desktop banner</option></select><small class="field-help">Desktop reminders run while Joplin is open. Mobile delivery is not yet supported by Joplin's plugin API.</small></div>
+				</div>
+				<label class="field-label" for="memo-location">Location</label><input id="memo-location" type="text" placeholder="Address or place">
+				<label class="field-label" for="memo-meeting-url">Video meeting link</label><input id="memo-meeting-url" type="url" placeholder="https://zoom.us/j/... or Teams/Meet URL">
+				<label class="field-label" for="memo-attendees">Attendees</label><input id="memo-attendees" type="text" placeholder="alex@example.com, sam@example.com">
+				<p class="helper-text">Every calendar item is a native Joplin to-do. Completed items remain in Joplin and reappear here if unchecked.</p>
+				<div class="modal-actions">
+					<button id="cancel-memo" class="secondary-button" type="button">Cancel</button>
+					<button id="save-memo" class="primary-button" type="submit">Add to calendar</button>
+				</div>
+			</form>
+		</div>
+
+		<div id="data-modal" class="modal-backdrop" hidden>
+			<div class="memo-modal"><div class="review-summary"><div><p class="eyebrow">Safety and portability</p><h2>Calendar data tools</h2></div><button id="close-data" class="icon-button" type="button">×</button></div><p class="helper-text">Repair normalizes FSRS metadata. Backup JSON includes calendar items, scheduling state, review history, and settings stored per item.</p><div class="header-actions"><button id="repair-button" class="secondary-button" type="button">Repair calendar data</button><button id="backup-export-button" class="secondary-button" type="button">Generate backup</button><button id="backup-import-button" class="primary-button" type="button">Import backup</button></div><textarea id="backup-text" rows="14" placeholder="Generated backup appears here, or paste a backup to import."></textarea></div>
+		</div>
+
+		<div id="ics-modal" class="modal-backdrop" hidden>
+			<form id="ics-form" class="memo-modal" aria-labelledby="ics-title">
+				<div class="review-summary"><div><p class="eyebrow">Interoperability</p><h2 id="ics-title">Import iCalendar</h2></div><button id="cancel-ics-icon" class="icon-button" type="button">×</button></div>
+				<p class="helper-text">Paste one or more RFC 5545 VEVENT records. Imported events become synchronized Joplin notes.</p>
+				<textarea id="ics-text" rows="12" required placeholder="BEGIN:VCALENDAR…"></textarea>
+				<div class="modal-actions"><button id="cancel-ics" class="secondary-button" type="button">Cancel</button><button class="primary-button" type="submit">Import</button></div>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

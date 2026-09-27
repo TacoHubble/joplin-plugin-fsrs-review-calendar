@@ -1,0 +1,8 @@
+src/
+api/
+scripts/
+node_modules/
+dist/
+tsconfig.json
+webpack.config.js
+plugin.config.json
